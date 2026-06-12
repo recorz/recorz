@@ -24,13 +24,13 @@
 
 **Done when:** The project configures and builds successfully with C++23.
 
-### Task 1.2: OpenXR Context (Basic Initialization) (completed)
+### Task 1.2: OpenXR Context (Basic Initialization) (Completed)
 - Create `xr/xr_context.h` and `xr_context.cpp`.
 - Implement OpenXR instance creation.
 - Enumerate and select a system (headset).
 - Create a basic session.
 
-**Done when:** OpenXR instance and system are successfully created.
+**Done when:** OpenXR instance and system are successfully created. (Completed)
 
 ### Task 1.3: Vulkan Context (with Dynamic Rendering)
 - Create `vulkan/vk_context.h` and `vk_context.cpp`.
@@ -39,7 +39,7 @@
 
 **Done when:** A Vulkan device supporting dynamic rendering is created successfully.
 
-### Task 1.4: OpenXR Swapchain Creation
+### Task 1.4: OpenXR Swapchain Creation (Completed)
 - Create stereo swapchains using OpenXR.
 - Implement image acquisition and release.
 
