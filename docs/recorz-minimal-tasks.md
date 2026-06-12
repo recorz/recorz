@@ -1,8 +1,9 @@
 # Recorz Minimal — Implementation Task List
 
-**Version:** 0.3  
-**Date:** June 11, 2026  
-**Related Spec:** `recorz-minimal-spec.md`
+**Version:** 0.4  
+**Date:** June 12, 2026  
+**Related Spec:** `recorz-minimal-spec.md`  
+**Architecture:** `recorz-architecture.md`
 
 **Key Decisions (Performance-First):**
 - Use **C++23**
@@ -28,28 +29,42 @@
 - Create `xr/xr_context.h` and `xr_context.cpp`.
 - Implement OpenXR instance creation.
 - Enumerate and select a system (headset).
-- Create a basic session.
+- Create a session from an external graphics binding.
 
 **Done when:** OpenXR instance and system are successfully created. (Completed)
 
-### Task 1.3: Vulkan Context (with Dynamic Rendering)
-- Create `vulkan/vk_context.h` and `vk_context.cpp`.
-- Create a Vulkan 1.3 instance and device with **dynamic rendering** support.
-- Ensure compatibility with OpenXR graphics requirements.
+### Task 1.2b: Platform Layer Split (Completed)
+- Extract enable2 bootstrap to `platform/xr_vulkan_bridge.cpp`.
+- Add `platform/graphics_context.cpp` as composition root.
+- Refactor `XrContext` to OpenXR-only responsibilities.
+- Add `gpu/vk_context.cpp` with `adopt()` for OpenXR-created handles.
 
-**Done when:** A Vulkan device supporting dynamic rendering is created successfully.
+**Done when:** `GraphicsContext::init()` creates a valid OpenXR session. See `recorz-architecture.md` Step 1.
+
+### Task 1.3: Vulkan Context (with Dynamic Rendering) (Completed)
+- `gpu/vk_context.h` adopts Vulkan handles from `XrVulkanBridge`.
+- Device is created with **dynamic rendering** and **synchronization2** via enable2.
+- `VkContext::graphicsBinding()` supplies session creation parameters.
+
+**Done when:** A Vulkan device supporting dynamic rendering is created successfully via OpenXR.
 
 ### Task 1.4: OpenXR Swapchain Creation (Completed)
-- Create stereo swapchains using OpenXR.
-- Implement image acquisition and release.
+- `xr_swapchain_group` — stereo swapchains from view configuration + runtime format list.
+- `gpu/vk_swapchain_images` — `VkImageView` per swapchain image.
+- Image acquire / wait / release wired through `StereoRenderer`.
 
-**Done when:** Swapchains are functional.
+**Done when:** Swapchains are functional. (Completed)
 
-### Task 1.5: Basic Compositor-Paced Loop
-- Implement the main loop driven by `xrWaitFrame`.
-- Submit frames to the compositor (initially just clearing the screen using dynamic rendering).
+### Task 1.5: Basic Compositor-Paced Loop (Completed)
+- `xr_frame` — `xrWaitFrame` / `xrBeginFrame` / `xrEndFrame`.
+- `xr_session` — poll events, `xrBeginSession` when ready.
+- `xr_space` — reference space + `xrLocateViews`.
+- `frame_packet` — POD snapshot from view data.
+- `gpu/command_ring` — 2 frames in flight.
+- `gpu/dynamic_renderer` — `vkCmdBeginRendering` solid-color clear per eye.
+- `render/stereo_renderer` — renders both eyes, submits `XrCompositionLayerProjection`.
 
-**Done when:** A solid color view renders correctly in the VR headset at the native refresh rate.
+**Done when:** A solid color view renders correctly in the VR headset at the native refresh rate. (Completed)
 
 ---
 
@@ -134,4 +149,4 @@ Build the smallest possible VR application that renders a cube with:
 
 ---
 
-**Next Action:** Start with **Task 1.1**.
+**Next Action:** **Task 2.1** — math wrapper (`math.hpp`). Phase 1 foundation is complete.

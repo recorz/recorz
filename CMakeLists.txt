@@ -40,8 +40,20 @@ FetchContent_MakeAvailable(openxr)
 # ============================================
 add_executable(recorz-minimal
     src/main.cpp
+    src/gpu/command_ring.cpp
+    src/gpu/dynamic_renderer.cpp
+    src/gpu/vk_context.cpp
+    src/gpu/vk_swapchain_images.cpp
+    src/platform/graphics_context.cpp
+    src/platform/xr_vulkan_bridge.cpp
+    src/render/stereo_renderer.cpp
     src/xr/xr_context.cpp
+    src/xr/xr_frame.cpp
+    src/xr/xr_session.cpp
+    src/xr/xr_space.cpp
     src/xr/xr_swapchain.cpp
+    src/xr/xr_swapchain_group.cpp
+    src/xr/xr_view_configuration.cpp
 )
 
 target_include_directories(recorz-minimal PRIVATE

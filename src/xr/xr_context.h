@@ -3,6 +3,8 @@
 #include <vulkan/vulkan.h>
 #include <openxr/openxr.h>
 #include <openxr/openxr_platform.h>
+#include "xr/xr_view_configuration.h"
+
 #include <string>
 
 namespace recorz::xr {
@@ -12,38 +14,26 @@ public:
     XrContext() = default;
     ~XrContext();
 
-    // OpenXR instance, XR system, and Vulkan instance/device (via OpenXR helpers).
-    bool init(const std::string& appName = "Recorz Minimal");
+    XrContext(const XrContext&) = delete;
+    XrContext& operator=(const XrContext&) = delete;
 
-    // xrCreateSession with XrGraphicsBindingVulkanKHR.
-    bool createSession();
+    bool createInstance(const std::string& appName = "Recorz Minimal");
+    bool selectSystem(XrFormFactor formFactor = XR_FORM_FACTOR_HEAD_MOUNTED_DISPLAY);
+    bool createSession(const XrGraphicsBindingVulkanKHR& graphicsBinding);
+    bool loadStereoViews();
+    void destroySession();
+    void shutdown();
 
-    bool createSwapchains();
-    bool beginFrame();
-    bool endFrame();
-
-    XrInstance getInstance() const { return instance_; }
-    XrSystemId getSystemId() const { return systemId_; }
-    XrSession  getSession()  const { return session_; }
-
-    VkInstance       getVulkanInstance() const { return vulkanInstance_; }
-    VkPhysicalDevice getPhysicalDevice() const { return physicalDevice_; }
-    VkDevice         getDevice() const { return device_; }
-    VkQueue          getGraphicsQueue() const { return graphicsQueue_; }
-    uint32_t         getGraphicsQueueFamily() const { return graphicsQueueFamily_; }
+    XrInstance instance() const { return instance_; }
+    XrSystemId system() const { return systemId_; }
+    XrSession  session() const { return session_; }
+    const StereoViewConfiguration& stereoViews() const { return stereoViews_; }
 
 private:
     XrInstance instance_ = XR_NULL_HANDLE;
     XrSystemId systemId_ = XR_NULL_SYSTEM_ID;
     XrSession  session_  = XR_NULL_HANDLE;
-
-    VkInstance       vulkanInstance_ = VK_NULL_HANDLE;
-    VkPhysicalDevice physicalDevice_ = VK_NULL_HANDLE;
-    VkDevice         device_         = VK_NULL_HANDLE;
-    VkQueue          graphicsQueue_  = VK_NULL_HANDLE;
-    uint32_t         graphicsQueueFamily_ = UINT32_MAX;
-
-    XrFrameState frameState_{};
+    StereoViewConfiguration stereoViews_{};
 };
 
 } // namespace recorz::xr

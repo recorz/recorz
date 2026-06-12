@@ -48,28 +48,36 @@ The implementation **must** satisfy the following:
 
 Even in this minimal version, we should avoid a completely throwaway structure.
 
-**Proposed Layering (Minimal):**
+**Authoritative design doc:** `recorz-architecture.md`
+
+**Current Layering:**
 
 ```
-Application Layer
-    └── MinimalApp (main loop, cube data)
+Application (main)
+    └── GraphicsContext (composition root)
 
-Rendering Layer (thin)
-    └── SimpleRenderer (Vulkan command recording + cube draw)
-
-Graphics Backend
-    └── VulkanContext + OpenXR Swapchain
+Platform
+    ├── XrVulkanBridge (enable2 bootstrap)
+    └── GraphicsContext
 
 XR Layer
-    └── OpenXRContext (session, swapchains, pose)
+    └── XrContext (instance, system, session, swapchains)
+
+GPU Layer
+    └── VkContext (adopts OpenXR-created Vulkan handles)
+
+Rendering Layer (planned)
+    └── StereoRenderer → DynamicRenderer
 ```
+
+Vulkan is created through OpenXR (`XR_KHR_vulkan_enable2`). `VkContext` does not call `vkCreateInstance` / `vkCreateDevice` directly in the VR path.
 
 **Key Design Decisions:**
 
 - Use a very small number of files initially.
 - Keep rendering logic separate from XR logic.
 - Use a simple struct or class to represent the cube (this will later become an entity + components).
-- Do **not** use a full ECS yet, but design the rendering path so it can later consume data from an ECS snapshot.
+- Do **not** use a full ECS yet, but design the rendering path so it can later consume data from an ECS snapshot (`FramePacket`).
 - Math types will be wrapped behind a thin abstraction to allow future replacement of GLM.
 
 ## 6. Technical Constraints
