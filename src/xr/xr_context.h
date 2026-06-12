@@ -1,7 +1,8 @@
 #pragma once
 
-#include <openxr/openxr.h>
 #include <vulkan/vulkan.h>
+#include <openxr/openxr.h>
+#include <openxr/openxr_platform.h>
 #include <string>
 #include "xr/xr_swapchain.h"
 

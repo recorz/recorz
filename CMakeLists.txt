@@ -1,30 +1,47 @@
 cmake_minimum_required(VERSION 3.28)
 project(recorz-minimal LANGUAGES CXX)
 
-# ============================================
-# Performance-oriented defaults
-# ============================================
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Enable good optimization and debug settings
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
-endif()
-
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_compile_options(-O0 -g3)
-else()
-    add_compile_options(-O3 -DNDEBUG -march=native)
+# ============================================
+# Performance / Build Settings
+# ============================================
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
 endif()
 
 # ============================================
-# Source files
+# Vulkan SDK (installed separately)
+# ============================================
+find_package(Vulkan REQUIRED)
+
+# ============================================
+# Fetch OpenXR SDK (loader + headers only)
+# ============================================
+include(FetchContent)
+
+set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(BUILD_CONFORMANCE_TESTS OFF CACHE BOOL "" FORCE)
+set(BUILD_API_LAYERS OFF CACHE BOOL "" FORCE)
+
+FetchContent_Declare(
+    openxr
+    GIT_REPOSITORY https://github.com/KhronosGroup/OpenXR-SDK.git
+    GIT_TAG        release-1.1.41
+    GIT_SHALLOW    TRUE
+)
+
+FetchContent_MakeAvailable(openxr)
+
+# ============================================
+# Source Files
 # ============================================
 add_executable(recorz-minimal
     src/main.cpp
     src/xr/xr_context.cpp
+    src/xr/xr_swapchain.cpp
     src/vulkan/vk_context.cpp
 )
 
@@ -32,19 +49,42 @@ target_include_directories(recorz-minimal PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-# ============================================
-# Future dependencies (commented for now)
-# ============================================
-# find_package(Vulkan REQUIRED)
-# find_package(OpenXR REQUIRED)
+target_compile_definitions(recorz-minimal PRIVATE
+    XR_USE_GRAPHICS_API_VULKAN
+)
 
-# target_link_libraries(recorz-minimal PRIVATE
-#     Vulkan::Vulkan
-#     OpenXR::openxr_loader
-# )
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND MSVC)
+    # clang-cl (LLVM front-end, MSVC linker/ABI)
+    target_compile_options(recorz-minimal PRIVATE
+        $<$<CONFIG:Debug>:/Od>
+        $<$<CONFIG:Debug>:/Zi>
+        $<$<NOT:$<CONFIG:Debug>>:/O2>
+        $<$<NOT:$<CONFIG:Debug>>:/clang:-march=native>
+    )
+elseif(MSVC)
+    target_compile_options(recorz-minimal PRIVATE
+        $<$<CONFIG:Debug>:/Od>
+        $<$<CONFIG:Debug>:/Zi>
+        $<$<NOT:$<CONFIG:Debug>>:/O2>
+    )
+else()
+    target_compile_options(recorz-minimal PRIVATE
+        $<$<CONFIG:Debug>:-O0>
+        $<$<CONFIG:Debug>:-g3>
+        $<$<NOT:$<CONFIG:Debug>>:-O3>
+        $<$<NOT:$<CONFIG:Debug>>:-DNDEBUG>
+        $<$<NOT:$<CONFIG:Debug>>:-march=native>
+    )
+endif()
+
+target_link_libraries(recorz-minimal PRIVATE
+    Vulkan::Vulkan
+    OpenXR::openxr_loader
+)
 
 # ============================================
-# Output
+# Status Messages
 # ============================================
 message(STATUS "Recorz Minimal configured with C++23")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "OpenXR fetched from: ${openxr_SOURCE_DIR}")

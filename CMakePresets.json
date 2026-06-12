@@ -1,0 +1,39 @@
+{
+    "version": 6,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 28,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "clang-cl-release",
+            "displayName": "clang-cl Release (Ninja)",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build-clang",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_C_COMPILER": "C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/Llvm/x64/bin/clang-cl.exe",
+                "CMAKE_CXX_COMPILER": "C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/Llvm/x64/bin/clang-cl.exe"
+            }
+        },
+        {
+            "name": "msvc-release",
+            "displayName": "MSVC Release (VS 2026)",
+            "generator": "Visual Studio 18 2026",
+            "architecture": "x64",
+            "binaryDir": "${sourceDir}/build"
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "clang-cl-release",
+            "configurePreset": "clang-cl-release"
+        },
+        {
+            "name": "msvc-release",
+            "configurePreset": "msvc-release",
+            "configuration": "Release"
+        }
+    ]
+}
