@@ -15,7 +15,7 @@
 
 ## Phase 1: Foundation (OpenXR + Vulkan Loop)
 
-### Task 1.1: Project Setup
+### Task 1.1: Project Setup (Completed)
 - Create a CMake project targeting **C++23**.
 - Set up the recommended folder structure.
 - Create a basic `main.cpp`.
