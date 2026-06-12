@@ -25,7 +25,6 @@ bool VkContext::init() {
 }
 
 bool VkContext::createInstance() {
-    // Application info
     VkApplicationInfo appInfo{};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     appInfo.pApplicationName = "Recorz Minimal";
@@ -34,18 +33,16 @@ bool VkContext::createInstance() {
     appInfo.engineVersion = VK_MAKE_VERSION(0, 1, 0);
     appInfo.apiVersion = VK_API_VERSION_1_3;
 
-    // Instance create info
-    VkInstanceCreateInfo createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    createInfo.pApplicationInfo = &appInfo;
-
-    // Required extensions for OpenXR + dynamic rendering
     instanceExtensions_ = {
         VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
         VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME,
         VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME,
+        VK_KHR_EXTERNAL_FENCE_CAPABILITIES_EXTENSION_NAME,   // ← Add this
     };
 
+    VkInstanceCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    createInfo.pApplicationInfo = &appInfo;
     createInfo.enabledExtensionCount = static_cast<uint32_t>(instanceExtensions_.size());
     createInfo.ppEnabledExtensionNames = instanceExtensions_.data();
 
@@ -107,10 +104,12 @@ bool VkContext::createLogicalDevice() {
     queueCreateInfo.queueCount = 1;
     queueCreateInfo.pQueuePriorities = &queuePriority;
 
-    // Enable dynamic rendering + synchronization2
+    // These are usually required by OpenXR
     deviceExtensions_ = {
         VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
         VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
+        VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME,        // ← Important
+        VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME,     // ← Important
     };
 
     VkPhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeatures{};

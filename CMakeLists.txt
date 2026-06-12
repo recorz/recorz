@@ -42,7 +42,6 @@ add_executable(recorz-minimal
     src/main.cpp
     src/xr/xr_context.cpp
     src/xr/xr_swapchain.cpp
-    src/vulkan/vk_context.cpp
 )
 
 target_include_directories(recorz-minimal PRIVATE
