@@ -40,19 +40,19 @@ FetchContent_MakeAvailable(openxr)
 # ============================================
 add_executable(recorz-minimal
     src/main.cpp
-    src/app/vr_application.cpp
-    src/app/vr_frame_loop.cpp
-    src/app/vr_session_resources.cpp
     src/gpu/command_ring.cpp
     src/gpu/dynamic_renderer.cpp
     src/gpu/vk_context.cpp
     src/gpu/vk_swapchain_images.cpp
     src/platform/graphics_bootstrap.cpp
+    src/platform/vr_session_loop.cpp
     src/platform/xr_vulkan_bridge.cpp
+    src/render/render_context.cpp
     src/render/stereo_renderer.cpp
     src/xr/xr_context.cpp
     src/xr/xr_frame.cpp
     src/xr/xr_session.cpp
+    src/xr/xr_view_runtime.cpp
     src/xr/xr_space.cpp
     src/xr/xr_swapchain.cpp
     src/xr/xr_swapchain_group.cpp

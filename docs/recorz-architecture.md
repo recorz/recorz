@@ -15,10 +15,12 @@ Responsibilities are split across layers:
 
 | Layer | Owns | Does Not Own |
 |-------|------|--------------|
-| **XrContext** | OpenXR instance, system, session, spaces, frame pacing, swapchains, composition | Vulkan objects, command buffers, pipelines |
-| **VkContext** | Vulkan instance, device, queues, GPU resources (future) | Session lifecycle, compositor timing, poses |
-| **GraphicsBootstrap** | Init order, wiring, session binding | Game logic, draw calls, frame loop |
-| **VrApplication** | App lifecycle, run loop | Low-level GPU/XR APIs |
+| **XrContext** | OpenXR instance, system, session | Vulkan objects, command buffers, pipelines |
+| **XrViewRuntime** | Reference space, stereo swapchains (post-beginSession) | Command buffers, draw calls |
+| **VkContext** | Vulkan instance, device, queues | Session lifecycle, compositor timing, poses |
+| **RenderContext** | Command ring, stereo renderer | OpenXR session/events |
+| **GraphicsBootstrap** | XR + Vulkan startup, session binding | Game logic, frame loop |
+| **VrSessionLoop** | Runtime orchestration (events → pace → render → submit) | Low-level GPU/XR APIs |
 | **XrVulkanBridge** | enable2 creation glue only | Long-lived state |
 
 ---
@@ -27,26 +29,27 @@ Responsibilities are split across layers:
 
 ```
 src/
-├── app/
-│   ├── vr_application.hpp/cpp    # init / run / shutdown
-│   ├── vr_frame_loop.hpp/cpp     # compositor-paced tick
-│   └── vr_session_resources.hpp/cpp  # post-beginSession resources
+├── main.cpp                      # bootstrap init → session loop → shutdown
 ├── platform/
-│   ├── graphics_bootstrap.hpp/cpp  # startup-only composition root
-│   └── xr_vulkan_bridge.hpp/cpp    # enable2 bootstrap only
+│   ├── graphics_bootstrap.hpp/cpp  # XR + Vulkan startup coordinator
+│   ├── vr_session_loop.hpp/cpp       # compositor-paced runtime orchestrator
+│   └── xr_vulkan_bridge.hpp/cpp      # enable2 bootstrap only
 ├── xr/
-│   ├── xr_context.hpp/cpp        # OpenXR lifecycle
+│   ├── xr_context.hpp/cpp        # OpenXR instance/system/session
 │   ├── xr_swapchain.hpp/cpp      # per-eye swapchain (XR side)
-│   ├── xr_frame.hpp/cpp          # (planned) wait/begin/end frame
-│   └── xr_space.hpp/cpp          # (planned) reference spaces, locate views
+│   ├── xr_frame.hpp/cpp          # wait/begin/end frame
+│   ├── xr_session.hpp/cpp        # event polling, xrBeginSession
+│   ├── xr_view_runtime.hpp/cpp   # reference space + stereo swapchains
+│   └── xr_space.hpp/cpp          # reference spaces, locate views
 ├── gpu/
 │   ├── vk_context.hpp/cpp        # Vulkan device ownership
-│   ├── vk_swapchain_images.hpp   # (planned) VkImageView + layout tracking
-│   ├── command_ring.hpp          # (planned) per-frame command buffers
-│   └── dynamic_renderer.hpp      # (planned) vkCmdBeginRendering
+│   ├── vk_swapchain_images.hpp   # VkImageView + layout per swapchain image
+│   ├── command_ring.hpp          # per-frame command buffers
+│   └── dynamic_renderer.hpp      # vkCmdBeginRendering
 ├── render/
-│   ├── frame_packet.hpp          # (planned) POD snapshot for renderer
-│   └── stereo_renderer.hpp       # (planned) records both eyes
+│   ├── frame_packet.hpp          # POD snapshot for renderer
+│   ├── render_context.hpp/cpp    # command ring + stereo renderer bundle
+│   └── stereo_renderer.hpp       # records both eyes, builds projection layer
 └── math.hpp
 ```
 
@@ -58,13 +61,15 @@ Namespaces: `recorz::xr`, `recorz::gpu`, `recorz::platform`, `recorz::render`.
 
 ```
 Application (main)
-    └── VrApplication
-            ├── GraphicsBootstrap
-            │       ├── XrContext
-            │       ├── VkContext
-            │       └── XrVulkanBridge (static bootstrap)
-            ├── VrSessionResources
-            └── VrFrameLoop
+    ├── GraphicsBootstrap
+    │       ├── XrContext
+    │       ├── VkContext
+    │       └── XrVulkanBridge (static bootstrap)
+    └── VrSessionLoop
+            ├── XrSessionRuntime
+            ├── XrFrame
+            ├── XrViewRuntime
+            └── RenderContext
 
 XrVulkanBridge::createVulkanForOpenXR(xr, vk)
     → xrGetVulkanGraphicsRequirements2KHR
@@ -79,10 +84,13 @@ GraphicsBootstrap::init()
     → XrVulkanBridge::createVulkanForOpenXR
     → XrContext::createSession(vk.graphicsBinding())
 
-VrApplication::run()
-    → VrFrameLoop::waitForSessionBegin
-    → VrSessionResources::create (lazy, after session begun)
-    → VrFrameLoop::tick (poll → wait → render → submit)
+main()
+    → GraphicsBootstrap::init
+    → VrSessionLoop::run
+        → waitForSessionBegin
+        → XrViewRuntime::create (lazy, after session begun)
+        → RenderContext::create (lazy, after swapchains)
+        → tick (poll → wait → render → submit)
 ```
 
 ### XrContext (OpenXR only)
@@ -110,11 +118,11 @@ Startup-only composition root. Owns `XrContext` and `VkContext`, coordinates boo
 2. Bootstrap Vulkan via bridge
 3. Create session with graphics binding from `VkContext`
 
-### VrApplication / VrFrameLoop / VrSessionResources
+### VrSessionLoop / XrViewRuntime / RenderContext
 
-`VrApplication` owns bootstrap, session runtime, frame pacer, and session-scoped resources.
-`VrFrameLoop::tick()` runs one compositor frame. `VrSessionResources` bundles reference space,
-swapchains, command ring, and stereo renderer (created after `xrBeginSession`).
+`VrSessionLoop` owns runtime orchestration: session events, compositor pacing, lazy creation of
+`XrViewRuntime` (OpenXR view resources) and `RenderContext` (GPU rendering resources).
+`main()` only wires bootstrap init, runs the session loop, and shuts down in order.
 
 ---
 
@@ -195,10 +203,10 @@ struct FramePacket {
 
 | Abstraction | Purpose | Status |
 |-------------|---------|--------|
-| `GraphicsBootstrap` | Startup composition root | **Implemented** |
-| `VrApplication` | App shell | **Implemented** |
-| `VrFrameLoop` | Compositor tick | **Implemented** |
-| `VrSessionResources` | Session-scoped resource bundle | **Implemented** |
+| `GraphicsBootstrap` | XR + Vulkan startup coordinator | **Implemented** |
+| `VrSessionLoop` | Runtime orchestrator | **Implemented** |
+| `XrViewRuntime` | OpenXR view resources (space + swapchains) | **Implemented** |
+| `RenderContext` | GPU rendering resources | **Implemented** |
 | `XrVulkanBridge` | enable2 glue | **Implemented** |
 | `VkContext::adopt` | Vulkan ownership | **Implemented** |
 | `FramePacket` / `ViewData` | Renderer input POD | **Implemented** |
@@ -230,7 +238,8 @@ ECS simulation → RenderSnapshot (SoA) → FramePacket → StereoRenderer → G
 - Strip Vulkan members from `XrContext`
 - Restore `VkContext` with `adopt()` and destroy logic
 - Add `GraphicsBootstrap` as startup composition root
-- Add `VrApplication` / `VrFrameLoop` / `VrSessionResources` in `app/`
+- Split session resources into `XrViewRuntime` (xr/) and `RenderContext` (render/)
+- Move frame loop to `platform/vr_session_loop`
 
 ### Step 2 — Split frame responsibilities ✅
 

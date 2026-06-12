@@ -13,8 +13,9 @@ struct BootstrapInitInfo {
     VulkanCreateInfo vulkanCreateInfo{};
 };
 
-// Startup-only composition root: OpenXR instance, Vulkan enable2, session creation.
-// Does not own frame loop, swapchains, or rendering resources.
+// XR + Vulkan startup coordinator (enable2 instance/device/session).
+// Owns XrContext and VkContext through session creation; does not own
+// per-session rendering resources or the compositor frame loop.
 class GraphicsBootstrap {
 public:
     GraphicsBootstrap() = default;

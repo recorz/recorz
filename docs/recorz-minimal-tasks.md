@@ -36,7 +36,7 @@
 ### Task 1.2b: Platform Layer Split (Completed)
 - Extract enable2 bootstrap to `platform/xr_vulkan_bridge.cpp`.
 - Add `platform/graphics_bootstrap.cpp` as startup composition root.
-- Add `app/vr_application.cpp`, `vr_frame_loop.cpp`, `vr_session_resources.cpp`.
+- Add `platform/vr_session_loop.cpp`, `xr/xr_view_runtime.cpp`, `render/render_context.cpp`.
 - Refactor `XrContext` to OpenXR-only responsibilities.
 - Add `gpu/vk_context.cpp` with `adopt()` for OpenXR-created handles.
 
