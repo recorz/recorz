@@ -24,7 +24,7 @@
 
 **Done when:** The project configures and builds successfully with C++23.
 
-### Task 1.2: OpenXR Context (Basic Initialization)
+### Task 1.2: OpenXR Context (Basic Initialization) (completed)
 - Create `xr/xr_context.h` and `xr_context.cpp`.
 - Implement OpenXR instance creation.
 - Enumerate and select a system (headset).
