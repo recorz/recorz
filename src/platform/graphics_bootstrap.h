@@ -8,20 +8,22 @@
 
 namespace recorz::platform {
 
-struct GraphicsInitInfo {
+struct BootstrapInitInfo {
     std::string applicationName = "Recorz Minimal";
     VulkanCreateInfo vulkanCreateInfo{};
 };
 
-class GraphicsContext {
+// Startup-only composition root: OpenXR instance, Vulkan enable2, session creation.
+// Does not own frame loop, swapchains, or rendering resources.
+class GraphicsBootstrap {
 public:
-    GraphicsContext() = default;
-    ~GraphicsContext();
+    GraphicsBootstrap() = default;
+    ~GraphicsBootstrap();
 
-    GraphicsContext(const GraphicsContext&) = delete;
-    GraphicsContext& operator=(const GraphicsContext&) = delete;
+    GraphicsBootstrap(const GraphicsBootstrap&) = delete;
+    GraphicsBootstrap& operator=(const GraphicsBootstrap&) = delete;
 
-    bool init(const GraphicsInitInfo& initInfo = {});
+    bool init(const BootstrapInitInfo& initInfo = {});
     void shutdown();
 
     xr::XrContext& xr() { return xr_; }

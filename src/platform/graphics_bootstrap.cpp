@@ -1,14 +1,12 @@
-#include "platform/graphics_context.h"
-
-#include <iostream>
+#include "platform/graphics_bootstrap.h"
 
 namespace recorz::platform {
 
-GraphicsContext::~GraphicsContext() {
+GraphicsBootstrap::~GraphicsBootstrap() {
     shutdown();
 }
 
-bool GraphicsContext::init(const GraphicsInitInfo& initInfo) {
+bool GraphicsBootstrap::init(const BootstrapInitInfo& initInfo) {
     if (initialized_) {
         return true;
     }
@@ -49,7 +47,7 @@ bool GraphicsContext::init(const GraphicsInitInfo& initInfo) {
     return true;
 }
 
-void GraphicsContext::shutdown() {
+void GraphicsBootstrap::shutdown() {
     if (!initialized_) {
         return;
     }

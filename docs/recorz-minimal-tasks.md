@@ -35,11 +35,12 @@
 
 ### Task 1.2b: Platform Layer Split (Completed)
 - Extract enable2 bootstrap to `platform/xr_vulkan_bridge.cpp`.
-- Add `platform/graphics_context.cpp` as composition root.
+- Add `platform/graphics_bootstrap.cpp` as startup composition root.
+- Add `app/vr_application.cpp`, `vr_frame_loop.cpp`, `vr_session_resources.cpp`.
 - Refactor `XrContext` to OpenXR-only responsibilities.
 - Add `gpu/vk_context.cpp` with `adopt()` for OpenXR-created handles.
 
-**Done when:** `GraphicsContext::init()` creates a valid OpenXR session. See `recorz-architecture.md` Step 1.
+**Done when:** `GraphicsBootstrap::init()` creates a valid OpenXR session. See `recorz-architecture.md` Step 1.
 
 ### Task 1.3: Vulkan Context (with Dynamic Rendering) (Completed)
 - `gpu/vk_context.h` adopts Vulkan handles from `XrVulkanBridge`.

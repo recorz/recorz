@@ -54,11 +54,11 @@ Even in this minimal version, we should avoid a completely throwaway structure.
 
 ```
 Application (main)
-    └── GraphicsContext (composition root)
+    └── VrApplication
 
 Platform
     ├── XrVulkanBridge (enable2 bootstrap)
-    └── GraphicsContext
+    └── GraphicsBootstrap (startup only)
 
 XR Layer
     └── XrContext (instance, system, session, swapchains)
