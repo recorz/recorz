@@ -5,20 +5,20 @@
 namespace recorz::render {
 namespace {
 
-const gpu::ClearColor kEyeColors[xr::XrSwapchainGroup::kMaxEyes] = {
+const gpu::ClearColor kEyeColors[gpu::StereoSwapchainImages::kMaxEyes] = {
     {0.05f, 0.08f, 0.35f, 1.0f},
     {0.35f, 0.08f, 0.08f, 1.0f},
 };
 
 } // namespace
 
-bool StereoRenderer::init(gpu::VkContext& vk, xr::XrSwapchainGroup& swapchains) {
+bool StereoRenderer::init(gpu::VkContext& vk) {
     if (initialized_) {
         return true;
     }
 
-    if (!vk.isInitialized() || swapchains.eyeCount() == 0) {
-        std::cerr << "StereoRenderer init: Vulkan or swapchains not ready.\n";
+    if (!vk.isInitialized()) {
+        std::cerr << "StereoRenderer init: Vulkan not ready.\n";
         return false;
     }
 
@@ -29,11 +29,12 @@ bool StereoRenderer::init(gpu::VkContext& vk, xr::XrSwapchainGroup& swapchains) 
 
 bool StereoRenderer::renderFrame(
     const FramePacket& packet,
-    xr::XrSwapchainGroup& swapchains,
+    xr::XrSwapchainGroup& xrSwapchains,
     xr::XrSpace& referenceSpace,
+    gpu::StereoSwapchainImages& swapchainImages,
     gpu::CommandRing& commandRing,
     XrCompositionLayerProjection& outLayer,
-    std::array<XrCompositionLayerProjectionView, xr::XrSwapchainGroup::kMaxEyes>& outViews) {
+    std::array<XrCompositionLayerProjectionView, gpu::StereoSwapchainImages::kMaxEyes>& outViews) {
     if (!initialized_ || vk_ == nullptr) {
         return false;
     }
@@ -44,10 +45,10 @@ bool StereoRenderer::renderFrame(
         return false;
     }
 
-    uint32_t imageIndices[xr::XrSwapchainGroup::kMaxEyes]{};
+    uint32_t imageIndices[gpu::StereoSwapchainImages::kMaxEyes]{};
 
-    for (uint32_t eye = 0; eye < swapchains.eyeCount(); ++eye) {
-        xr::XrSwapchain& xrSwapchain = swapchains.eye(eye);
+    for (uint32_t eye = 0; eye < xrSwapchains.eyeCount(); ++eye) {
+        xr::XrSwapchain& xrSwapchain = xrSwapchains.eye(eye);
         if (!xrSwapchain.acquireImage(&imageIndices[eye])) {
             std::cerr << "Failed to acquire swapchain image for eye " << eye << ".\n";
             return false;
@@ -57,7 +58,7 @@ bool StereoRenderer::renderFrame(
             return false;
         }
 
-        gpu::VkSwapchainImages& gpuImages = swapchains.gpuImages(eye);
+        gpu::VkSwapchainImages& gpuImages = swapchainImages.eye(eye);
         renderer_.clearColor(commandBuffer, gpuImages, imageIndices[eye], kEyeColors[eye]);
     }
 
@@ -68,8 +69,8 @@ bool StereoRenderer::renderFrame(
         return false;
     }
 
-    for (uint32_t eye = 0; eye < swapchains.eyeCount(); ++eye) {
-        if (!swapchains.eye(eye).releaseImage()) {
+    for (uint32_t eye = 0; eye < xrSwapchains.eyeCount(); ++eye) {
+        if (!xrSwapchains.eye(eye).releaseImage()) {
             std::cerr << "Failed to release swapchain image for eye " << eye << ".\n";
             return false;
         }
@@ -81,7 +82,7 @@ bool StereoRenderer::renderFrame(
         view.type = XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW;
         view.pose = packet.views[eye].pose;
         view.fov = packet.views[eye].fov;
-        view.subImage.swapchain = swapchains.eye(eye).getHandle();
+        view.subImage.swapchain = xrSwapchains.eye(eye).getHandle();
         view.subImage.imageRect.offset = {0, 0};
         view.subImage.imageRect.extent = {
             static_cast<int32_t>(packet.views[eye].width),

@@ -1,11 +1,9 @@
 #pragma once
 
-#include "gpu/vk_swapchain_images.h"
 #include "xr/xr_swapchain.h"
 #include "xr/xr_view_configuration.h"
 
 #include <openxr/openxr.h>
-#include <vulkan/vulkan.h>
 
 #include <cstdint>
 
@@ -21,22 +19,19 @@ public:
     XrSwapchainGroup(const XrSwapchainGroup&) = delete;
     XrSwapchainGroup& operator=(const XrSwapchainGroup&) = delete;
 
-    bool create(XrSession session, VkDevice device, const StereoViewConfiguration& viewConfiguration);
-    void destroy(VkDevice device);
+    bool create(XrSession session, const StereoViewConfiguration& viewConfiguration);
+    void destroy();
 
     uint32_t eyeCount() const { return eyeCount_; }
     int64_t format() const { return format_; }
 
     XrSwapchain& eye(uint32_t index);
     const XrSwapchain& eye(uint32_t index) const;
-    gpu::VkSwapchainImages& gpuImages(uint32_t index);
-    const gpu::VkSwapchainImages& gpuImages(uint32_t index) const;
 
 private:
     uint32_t eyeCount_ = 0;
     int64_t format_ = 0;
     XrSwapchain swapchains_[kMaxEyes]{};
-    gpu::VkSwapchainImages gpuImages_[kMaxEyes]{};
 };
 
 } // namespace recorz::xr

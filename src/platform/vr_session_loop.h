@@ -4,7 +4,7 @@
 #include "render/render_context.h"
 #include "xr/xr_frame.h"
 #include "xr/xr_session.h"
-#include "xr/xr_view_runtime.h"
+#include "xr/xr_view_resources.h"
 
 #include <chrono>
 #include <cstdint>
@@ -51,7 +51,7 @@ private:
     GraphicsBootstrap& bootstrap_;
     xr::XrSessionRuntime session_;
     xr::XrFrame framePacer_;
-    xr::XrViewRuntime viewRuntime_;
+    xr::XrViewResources viewResources_;
     render::RenderContext renderContext_;
 
     int renderedFrames_ = 0;

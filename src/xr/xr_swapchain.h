@@ -17,6 +17,8 @@ public:
 
     ::XrSwapchain getHandle() const { return handle_; }
     const std::vector<XrSwapchainImageVulkanKHR>& getImages() const { return images_; }
+    uint32_t width() const { return width_; }
+    uint32_t height() const { return height_; }
 
     bool acquireImage(uint32_t* imageIndex);
     bool waitImage(XrDuration timeout = XR_INFINITE_DURATION);
@@ -26,6 +28,8 @@ private:
     ::XrSwapchain handle_ = XR_NULL_HANDLE;
     std::vector<XrSwapchainImageVulkanKHR> images_;
     XrSession session_ = XR_NULL_HANDLE;
+    uint32_t width_ = 0;
+    uint32_t height_ = 0;
 };
 
 } // namespace recorz::xr

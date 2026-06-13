@@ -44,11 +44,8 @@ XrSwapchainGroup::~XrSwapchainGroup() {
     }
 }
 
-bool XrSwapchainGroup::create(
-    XrSession session,
-    VkDevice device,
-    const StereoViewConfiguration& viewConfiguration) {
-    destroy(device);
+bool XrSwapchainGroup::create(XrSession session, const StereoViewConfiguration& viewConfiguration) {
+    destroy();
 
     if (!viewConfiguration.isValid()) {
         std::cerr << "Invalid stereo view configuration for swapchains.\n";
@@ -64,38 +61,19 @@ bool XrSwapchainGroup::create(
         const uint32_t sampleCount = viewConfiguration.views[i].recommendedSwapchainSampleCount;
 
         if (!swapchains_[i].create(session, format_, width, height, sampleCount)) {
-            destroy(device);
-            return false;
-        }
-
-        const auto& xrImages = swapchains_[i].getImages();
-        std::vector<VkImage> vkImages;
-        vkImages.reserve(xrImages.size());
-        for (const auto& xrImage : xrImages) {
-            vkImages.push_back(xrImage.image);
-        }
-
-        const VkExtent2D extent{width, height};
-        if (!gpuImages_[i].create(
-                device,
-                vkImages.data(),
-                static_cast<uint32_t>(vkImages.size()),
-                static_cast<VkFormat>(format_),
-                extent)) {
-            destroy(device);
+            destroy();
             return false;
         }
 
         std::cout << "Eye " << i << " swapchain: " << width << "x" << height
-                  << " (" << xrImages.size() << " images)\n";
+                  << " (" << swapchains_[i].getImages().size() << " images)\n";
     }
 
     return true;
 }
 
-void XrSwapchainGroup::destroy(VkDevice device) {
+void XrSwapchainGroup::destroy() {
     for (uint32_t i = 0; i < eyeCount_; ++i) {
-        gpuImages_[i].destroy(device);
         swapchains_[i].destroy();
     }
     eyeCount_ = 0;
@@ -108,14 +86,6 @@ XrSwapchain& XrSwapchainGroup::eye(uint32_t index) {
 
 const XrSwapchain& XrSwapchainGroup::eye(uint32_t index) const {
     return swapchains_[index];
-}
-
-gpu::VkSwapchainImages& XrSwapchainGroup::gpuImages(uint32_t index) {
-    return gpuImages_[index];
-}
-
-const gpu::VkSwapchainImages& XrSwapchainGroup::gpuImages(uint32_t index) const {
-    return gpuImages_[index];
 }
 
 } // namespace recorz::xr

@@ -5,16 +5,15 @@
 #include "xr/xr_view_configuration.h"
 
 #include <openxr/openxr.h>
-#include <vulkan/vulkan.h>
 
 namespace recorz::xr {
 
 // OpenXR view resources created after xrBeginSession: reference space + stereo swapchains.
-class XrViewRuntime {
+class XrViewResources {
 public:
     bool isReady() const;
-    bool create(XrSession session, VkDevice device, const StereoViewConfiguration& viewConfiguration);
-    void destroy(VkDevice device);
+    bool create(XrSession session, const StereoViewConfiguration& viewConfiguration);
+    void destroy();
 
     XrSpace& referenceSpace() { return referenceSpace_; }
     const XrSpace& referenceSpace() const { return referenceSpace_; }

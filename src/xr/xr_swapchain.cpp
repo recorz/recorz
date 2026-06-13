@@ -11,6 +11,8 @@ XrSwapchain::~XrSwapchain() {
 
 bool XrSwapchain::create(XrSession session, int64_t format, uint32_t width, uint32_t height, uint32_t sampleCount) {
     session_ = session;
+    width_ = width;
+    height_ = height;
 
     XrSwapchainCreateInfo createInfo{};
     createInfo.type = XR_TYPE_SWAPCHAIN_CREATE_INFO;
@@ -60,6 +62,8 @@ void XrSwapchain::destroy() {
         handle_ = XR_NULL_HANDLE;
     }
     images_.clear();
+    width_ = 0;
+    height_ = 0;
 }
 
 bool XrSwapchain::acquireImage(uint32_t* imageIndex) {

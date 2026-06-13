@@ -1,10 +1,12 @@
 #pragma once
 
-#include "xr/xr_space.h"
-
 #include <openxr/openxr.h>
 
 #include <cstdint>
+
+namespace recorz::xr {
+struct ViewState;
+}
 
 namespace recorz::render {
 
@@ -23,19 +25,6 @@ struct FramePacket {
     ViewData views[kMaxViews]{};
 };
 
-inline FramePacket fromXrViews(XrTime displayTime, const recorz::xr::ViewState& viewState) {
-    FramePacket packet{};
-    packet.displayTime = displayTime;
-    packet.viewCount = viewState.viewCount;
-
-    for (uint32_t i = 0; i < viewState.viewCount; ++i) {
-        packet.views[i].pose = viewState.views[i].pose;
-        packet.views[i].fov = viewState.views[i].fov;
-        packet.views[i].width = viewState.configViews[i].recommendedImageRectWidth;
-        packet.views[i].height = viewState.configViews[i].recommendedImageRectHeight;
-    }
-
-    return packet;
-}
+FramePacket fromXrViewState(XrTime displayTime, const xr::ViewState& viewState);
 
 } // namespace recorz::render

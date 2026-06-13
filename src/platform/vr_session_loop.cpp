@@ -1,6 +1,7 @@
 #include "platform/vr_session_loop.h"
 
 #include "render/frame_packet.h"
+#include "gpu/stereo_swapchain_images.h"
 
 #include <array>
 #include <iostream>
@@ -42,8 +43,8 @@ void VrSessionLoop::shutdown() {
     if (renderContext_.isReady()) {
         renderContext_.destroy(bootstrap_.vk());
     }
-    if (viewRuntime_.isReady()) {
-        viewRuntime_.destroy(bootstrap_.vk().device());
+    if (viewResources_.isReady()) {
+        viewResources_.destroy();
     }
 }
 
@@ -68,18 +69,17 @@ bool VrSessionLoop::waitForSessionBegin(std::chrono::seconds timeout) {
 }
 
 bool VrSessionLoop::ensureRuntimeReady() {
-    if (!viewRuntime_.isReady()) {
-        if (!viewRuntime_.create(
+    if (!viewResources_.isReady()) {
+        if (!viewResources_.create(
                 bootstrap_.xr().session(),
-                bootstrap_.vk().device(),
                 bootstrap_.xr().stereoViews())) {
             return false;
         }
     }
 
     if (!renderContext_.isReady()) {
-        if (!renderContext_.create(bootstrap_.vk(), viewRuntime_.swapchains())) {
-            viewRuntime_.destroy(bootstrap_.vk().device());
+        if (!renderContext_.create(bootstrap_.vk(), viewResources_.swapchains())) {
+            viewResources_.destroy();
             return false;
         }
     }
@@ -107,7 +107,7 @@ LoopTickResult VrSessionLoop::tick(const VrSessionLoopConfig& config) {
     }
 
     if (!ensureRuntimeReady()) {
-        std::cerr << "Failed to initialize view or render runtime.\n";
+        std::cerr << "Failed to initialize view or render resources.\n";
         return {.status = LoopTickStatus::Error};
     }
 
@@ -123,25 +123,19 @@ LoopTickResult VrSessionLoop::tick(const VrSessionLoopConfig& config) {
 
     if (frame.shouldRender) {
         xr::ViewState views{};
-        if (!viewRuntime_.referenceSpace().locateViews(
+        if (!viewResources_.referenceSpace().locateViews(
                 session, frame.state.predictedDisplayTime, views)) {
             std::cerr << "Failed to locate views.\n";
             return {.status = LoopTickStatus::Exit};
         }
 
         const render::FramePacket packet =
-            render::fromXrViews(frame.state.predictedDisplayTime, views);
+            render::fromXrViewState(frame.state.predictedDisplayTime, views);
 
         XrCompositionLayerProjection projectionLayer{};
-        std::array<XrCompositionLayerProjectionView, xr::XrSwapchainGroup::kMaxEyes> projectionViews{};
+        std::array<XrCompositionLayerProjectionView, gpu::StereoSwapchainImages::kMaxEyes> projectionViews{};
 
-        if (!renderContext_.renderer().renderFrame(
-                packet,
-                viewRuntime_.swapchains(),
-                viewRuntime_.referenceSpace(),
-                renderContext_.commandRing(),
-                projectionLayer,
-                projectionViews)) {
+        if (!renderContext_.renderFrame(packet, viewResources_, projectionLayer, projectionViews)) {
             std::cerr << "Failed to render frame.\n";
             return {.status = LoopTickStatus::Exit};
         }

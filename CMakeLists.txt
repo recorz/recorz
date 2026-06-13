@@ -42,17 +42,19 @@ add_executable(recorz-minimal
     src/main.cpp
     src/gpu/command_ring.cpp
     src/gpu/dynamic_renderer.cpp
+    src/gpu/stereo_swapchain_images.cpp
     src/gpu/vk_context.cpp
     src/gpu/vk_swapchain_images.cpp
     src/platform/graphics_bootstrap.cpp
     src/platform/vr_session_loop.cpp
     src/platform/xr_vulkan_bridge.cpp
+    src/render/frame_packet.cpp
     src/render/render_context.cpp
     src/render/stereo_renderer.cpp
     src/xr/xr_context.cpp
     src/xr/xr_frame.cpp
     src/xr/xr_session.cpp
-    src/xr/xr_view_runtime.cpp
+    src/xr/xr_view_resources.cpp
     src/xr/xr_space.cpp
     src/xr/xr_swapchain.cpp
     src/xr/xr_swapchain_group.cpp
