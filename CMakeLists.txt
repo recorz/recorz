@@ -36,12 +36,59 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(openxr)
 
 # ============================================
+# GLM (header-only math, wrapped by math.hpp)
+# ============================================
+FetchContent_Declare(
+    glm
+    GIT_REPOSITORY https://github.com/g-truc/glm.git
+    GIT_TAG        1.0.1
+    GIT_SHALLOW    TRUE
+)
+FetchContent_MakeAvailable(glm)
+
+# ============================================
+# Shaders (SPIR-V via glslc)
+# ============================================
+find_program(GLSLC_EXECUTABLE glslc HINTS "$ENV{VULKAN_SDK}/Bin" "$ENV{VULKAN_SDK}/bin")
+if(NOT GLSLC_EXECUTABLE)
+    message(FATAL_ERROR "glslc not found. Install the Vulkan SDK.")
+endif()
+
+set(RECORZ_SHADER_DIR ${CMAKE_BINARY_DIR}/shaders)
+string(REPLACE "\\" "/" RECORZ_SHADER_DIR "${RECORZ_SHADER_DIR}")
+file(MAKE_DIRECTORY ${RECORZ_SHADER_DIR})
+
+set(RECORZ_SHADERS
+    ${CMAKE_SOURCE_DIR}/shaders/cube.vert
+    ${CMAKE_SOURCE_DIR}/shaders/cube.frag
+)
+
+set(RECORZ_SHADER_SPV)
+foreach(SHADER ${RECORZ_SHADERS})
+    get_filename_component(SHADER_NAME ${SHADER} NAME)
+    set(SPV_OUTPUT ${RECORZ_SHADER_DIR}/${SHADER_NAME}.spv)
+    add_custom_command(
+        OUTPUT ${SPV_OUTPUT}
+        COMMAND ${GLSLC_EXECUTABLE} ${SHADER} -o ${SPV_OUTPUT}
+        DEPENDS ${SHADER}
+        COMMENT "Compiling shader ${SHADER_NAME}"
+    )
+    list(APPEND RECORZ_SHADER_SPV ${SPV_OUTPUT})
+endforeach()
+
+add_custom_target(recorz_shaders DEPENDS ${RECORZ_SHADER_SPV})
+
+# ============================================
 # Source Files
 # ============================================
 add_executable(recorz-minimal
     src/main.cpp
+    src/gpu/buffer.cpp
     src/gpu/command_ring.cpp
+    src/gpu/cube_mesh.cpp
+    src/gpu/cube_pipeline.cpp
     src/gpu/dynamic_renderer.cpp
+    src/gpu/shader_module.cpp
     src/gpu/stereo_swapchain_images.cpp
     src/gpu/vk_context.cpp
     src/gpu/vk_swapchain_images.cpp
@@ -51,6 +98,7 @@ add_executable(recorz-minimal
     src/render/frame_packet.cpp
     src/render/render_context.cpp
     src/render/stereo_renderer.cpp
+    src/render/view_matrices.cpp
     src/xr/xr_context.cpp
     src/xr/xr_frame.cpp
     src/xr/xr_session.cpp
@@ -67,7 +115,10 @@ target_include_directories(recorz-minimal PRIVATE
 
 target_compile_definitions(recorz-minimal PRIVATE
     XR_USE_GRAPHICS_API_VULKAN
+    RECORZ_SHADER_DIR="${RECORZ_SHADER_DIR}"
 )
+
+add_dependencies(recorz-minimal recorz_shaders)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND MSVC)
     # clang-cl (LLVM front-end, MSVC linker/ABI)
@@ -96,6 +147,7 @@ endif()
 target_link_libraries(recorz-minimal PRIVATE
     Vulkan::Vulkan
     OpenXR::openxr_loader
+    glm::glm
 )
 
 # ============================================

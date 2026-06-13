@@ -49,7 +49,7 @@ void transitionImage(
 
 } // namespace
 
-void DynamicRenderer::clearColor(
+void DynamicRenderer::beginColorPass(
     VkCommandBuffer commandBuffer,
     VkSwapchainImages& swapchainImages,
     uint32_t imageIndex,
@@ -85,7 +85,42 @@ void DynamicRenderer::clearColor(
     renderingInfo.pColorAttachments = &colorAttachment;
 
     vkCmdBeginRendering(commandBuffer, &renderingInfo);
+    setViewportScissor(commandBuffer, extent);
+}
+
+void DynamicRenderer::setViewportScissor(VkCommandBuffer commandBuffer, VkExtent2D extent) const {
+    VkViewport viewport{};
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = static_cast<float>(extent.width);
+    viewport.height = static_cast<float>(extent.height);
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+
+    VkRect2D scissor{};
+    scissor.offset = {0, 0};
+    scissor.extent = extent;
+
+    vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+    vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+}
+
+void DynamicRenderer::endColorPass(
+    VkCommandBuffer commandBuffer,
+    VkSwapchainImages& swapchainImages,
+    uint32_t imageIndex) const {
+    (void)swapchainImages;
+    (void)imageIndex;
     vkCmdEndRendering(commandBuffer);
+}
+
+void DynamicRenderer::clearColor(
+    VkCommandBuffer commandBuffer,
+    VkSwapchainImages& swapchainImages,
+    uint32_t imageIndex,
+    const ClearColor& color) const {
+    beginColorPass(commandBuffer, swapchainImages, imageIndex, color);
+    endColorPass(commandBuffer, swapchainImages, imageIndex);
 }
 
 } // namespace recorz::gpu

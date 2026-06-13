@@ -4,7 +4,7 @@
 #include <iostream>
 
 int main() {
-    std::cout << "=== Recorz Minimal: VR Clear Color Loop ===\n\n";
+    std::cout << "=== Recorz Minimal: VR Spinning Cube ===\n\n";
 
     recorz::platform::GraphicsBootstrap bootstrap;
     recorz::platform::BootstrapInitInfo bootstrapInfo;

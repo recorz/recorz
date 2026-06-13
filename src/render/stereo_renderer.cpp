@@ -1,24 +1,41 @@
 #include "render/stereo_renderer.h"
 
+#include "math.hpp"
+#include "render/view_matrices.h"
+
+#include <glm/gtc/type_ptr.hpp>
 #include <iostream>
 
 namespace recorz::render {
 namespace {
 
-const gpu::ClearColor kEyeColors[gpu::StereoSwapchainImages::kMaxEyes] = {
-    {0.05f, 0.08f, 0.35f, 1.0f},
-    {0.35f, 0.08f, 0.08f, 1.0f},
-};
+const gpu::ClearColor kBackgroundColor{0.04f, 0.05f, 0.08f, 1.0f};
 
 } // namespace
 
-bool StereoRenderer::init(gpu::VkContext& vk) {
+bool StereoRenderer::init(
+    gpu::VkContext& vk,
+    const xr::XrSwapchainGroup& xrSwapchains,
+    const std::string& shaderDir) {
     if (initialized_) {
         return true;
     }
 
-    if (!vk.isInitialized()) {
-        std::cerr << "StereoRenderer init: Vulkan not ready.\n";
+    if (!vk.isInitialized() || xrSwapchains.eyeCount() == 0) {
+        std::cerr << "StereoRenderer init: Vulkan or swapchains not ready.\n";
+        return false;
+    }
+
+    const VkFormat colorFormat = static_cast<VkFormat>(xrSwapchains.format());
+
+    if (!cubeMesh_.create(vk)) {
+        std::cerr << "Failed to create cube mesh.\n";
+        return false;
+    }
+
+    if (!cubePipeline_.create(vk, colorFormat, shaderDir)) {
+        std::cerr << "Failed to create cube pipeline.\n";
+        cubeMesh_.destroy(vk.device());
         return false;
     }
 
@@ -35,7 +52,7 @@ bool StereoRenderer::renderFrame(
     gpu::CommandRing& commandRing,
     XrCompositionLayerProjection& outLayer,
     std::array<XrCompositionLayerProjectionView, gpu::StereoSwapchainImages::kMaxEyes>& outViews) {
-    if (!initialized_ || vk_ == nullptr) {
+    if (!initialized_ || vk_ == nullptr || !cubePipeline_.isReady()) {
         return false;
     }
 
@@ -59,7 +76,14 @@ bool StereoRenderer::renderFrame(
         }
 
         gpu::VkSwapchainImages& gpuImages = swapchainImages.eye(eye);
-        renderer_.clearColor(commandBuffer, gpuImages, imageIndices[eye], kEyeColors[eye]);
+        renderer_.beginColorPass(commandBuffer, gpuImages, imageIndices[eye], kBackgroundColor);
+
+        const math::Mat4 mvp = mvpForView(packet.views[eye], packet.displayTime);
+        cubePipeline_.bind(commandBuffer);
+        cubePipeline_.pushMvp(commandBuffer, glm::value_ptr(mvp));
+        cubePipeline_.draw(commandBuffer, cubeMesh_);
+
+        renderer_.endColorPass(commandBuffer, gpuImages, imageIndices[eye]);
     }
 
     if (!commandRing.submit(vk_->graphicsQueue(), frameIndex)) {
@@ -105,6 +129,8 @@ void StereoRenderer::shutdown(gpu::VkContext& vk) {
     if (initialized_ && vk.isInitialized()) {
         vkDeviceWaitIdle(vk.device());
     }
+    cubePipeline_.destroy(vk.device());
+    cubeMesh_.destroy(vk.device());
     vk_ = nullptr;
     initialized_ = false;
 }

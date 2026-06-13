@@ -1,6 +1,8 @@
 #pragma once
 
 #include "gpu/command_ring.h"
+#include "gpu/cube_mesh.h"
+#include "gpu/cube_pipeline.h"
 #include "gpu/dynamic_renderer.h"
 #include "gpu/stereo_swapchain_images.h"
 #include "gpu/vk_context.h"
@@ -12,12 +14,13 @@
 
 #include <array>
 #include <cstdint>
+#include <string>
 
 namespace recorz::render {
 
 class StereoRenderer {
 public:
-    bool init(gpu::VkContext& vk);
+    bool init(gpu::VkContext& vk, const xr::XrSwapchainGroup& xrSwapchains, const std::string& shaderDir);
 
     bool renderFrame(
         const FramePacket& packet,
@@ -32,6 +35,8 @@ public:
 
 private:
     gpu::DynamicRenderer renderer_;
+    gpu::CubeMesh cubeMesh_;
+    gpu::CubePipeline cubePipeline_;
     gpu::VkContext* vk_ = nullptr;
     bool initialized_ = false;
 };

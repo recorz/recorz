@@ -4,6 +4,10 @@
 
 #include <iostream>
 
+#ifndef RECORZ_SHADER_DIR
+#define RECORZ_SHADER_DIR "shaders"
+#endif
+
 namespace recorz::render {
 
 bool RenderContext::isReady() const {
@@ -33,7 +37,7 @@ bool RenderContext::create(gpu::VkContext& vk, const xr::XrSwapchainGroup& xrSwa
         return false;
     }
 
-    if (!stereoRenderer_.init(vk)) {
+    if (!stereoRenderer_.init(vk, xrSwapchains, RECORZ_SHADER_DIR)) {
         std::cerr << "Failed to initialize stereo renderer.\n";
         swapchainImages_.destroy(vk.device());
         commandRing_.destroy(vk.device());

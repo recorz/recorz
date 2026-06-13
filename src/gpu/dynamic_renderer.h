@@ -15,6 +15,21 @@ struct ClearColor {
 
 class DynamicRenderer {
 public:
+    void beginColorPass(
+        VkCommandBuffer commandBuffer,
+        VkSwapchainImages& swapchainImages,
+        uint32_t imageIndex,
+        const ClearColor& color) const;
+
+    void setViewportScissor(
+        VkCommandBuffer commandBuffer,
+        VkExtent2D extent) const;
+
+    void endColorPass(
+        VkCommandBuffer commandBuffer,
+        VkSwapchainImages& swapchainImages,
+        uint32_t imageIndex) const;
+
     void clearColor(
         VkCommandBuffer commandBuffer,
         VkSwapchainImages& swapchainImages,
